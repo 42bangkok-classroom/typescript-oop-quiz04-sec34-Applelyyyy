@@ -63,7 +63,4 @@ export class MissionService {
 
     return newMission;
   }
-  remove(id:string){
-
-  }
 }

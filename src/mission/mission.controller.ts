@@ -20,11 +20,4 @@ export class MissionController {
   create(@Body() body: ICreateMission) {
     return this.missionService.create(body);
   }
-  @Delete()
-  @HttpCode(200)
-  remove(
-    @Param('id') id:string
-  ){
-    return this.missionService.remove(id)
-  }
 }
