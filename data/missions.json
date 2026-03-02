@@ -16,5 +16,14 @@
         "riskLevel": "HIGH",
         "startDate": "2024-02-15",
         "endDate": null
+    },
+    {
+        "id": "3",
+        "codename": "OMEGA_PROTO",
+        "status": "ACTIVE",
+        "targetName": "General Z",
+        "riskLevel": "HIGH",
+        "startDate": "2024-05-01",
+        "endDate": null
     }
 ]

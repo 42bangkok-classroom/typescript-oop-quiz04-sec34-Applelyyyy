@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IMission } from './mission.interface';
+import { IMission, ICreateMission } from './mission.interface';
 import * as fs from 'fs';
 import * as path from 'path';
 @Injectable()
@@ -41,5 +41,26 @@ export class MissionService {
 
       return { ...mission, durationDays };
     });
+  }
+
+  create(body: ICreateMission) {
+    const data = fs.readFileSync(this.filePath, 'utf-8');
+    const missions = JSON.parse(data) as IMission[];
+
+    const lastId = Number(missions[missions.length - 1].id);
+    const newMission: IMission = {
+      id: String(lastId + 1),
+      codename: body.codename,
+      status: 'ACTIVE',
+      targetName: body.targetName,
+      riskLevel: body.riskLevel,
+      startDate: body.startDate,
+      endDate: null,
+    };
+
+    missions.push(newMission);
+    fs.writeFileSync(this.filePath, JSON.stringify(missions, null, 4));
+
+    return newMission;
   }
 }
