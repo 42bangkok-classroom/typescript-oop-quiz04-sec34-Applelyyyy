@@ -16,10 +16,6 @@ export class MissionController {
     return this.missionService.getSummary();
   }
 
-  @Post()
-  create(@Body() body: ICreateMission) {
-    return this.missionService.create(body);
-  }
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.missionService.remove(id);
