@@ -43,19 +43,27 @@ export class MissionService {
     });
   }
 
-  remove(id: string) {
+  create(body: ICreateMission) {
     const data = fs.readFileSync(this.filePath, 'utf-8');
     const missions = JSON.parse(data) as IMission[];
 
-    const index = missions.findIndex((m) => m.id === id);
+    const lastId = Number(missions[missions.length - 1].id);
+    const newMission: IMission = {
+      id: String(lastId + 1),
+      codename: body.codename,
+      status: 'ACTIVE',
+      targetName: body.targetName,
+      riskLevel: body.riskLevel,
+      startDate: body.startDate,
+      endDate: null,
+    };
 
-    if (index === -1) {
-      throw new NotFoundException();
-    }
-
-    missions.splice(index, 1);
+    missions.push(newMission);
     fs.writeFileSync(this.filePath, JSON.stringify(missions, null, 4));
 
-    return { message: `Mission ID ${id} has been successfully deleted.` };
+    return newMission;
+  }
+  remove(id:string){
+
   }
 }

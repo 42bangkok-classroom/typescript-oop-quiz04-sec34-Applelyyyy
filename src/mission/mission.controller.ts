@@ -16,8 +16,15 @@ export class MissionController {
     return this.missionService.getSummary();
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.missionService.remove(id);
+  @Post()
+  create(@Body() body: ICreateMission) {
+    return this.missionService.create(body);
+  }
+  @Delete()
+  @HttpCode(200)
+  remove(
+    @Param('id') id:string
+  ){
+    return this.missionService.remove(id)
   }
 }
