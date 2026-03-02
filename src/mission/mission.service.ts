@@ -63,4 +63,39 @@ export class MissionService {
 
     return newMission;
   }
+
+  findOne(id: string, clearance: string) {
+    const data = fs.readFileSync(this.filePath, 'utf-8');
+    const missions = JSON.parse(data) as IMission[];
+
+    const mission = missions.find((m) => m.id === id);
+
+    if (mission == null) {
+      throw new NotFoundException();
+    }
+
+    const highRisk = mission.riskLevel === 'HIGH' || mission.riskLevel === 'CRITICAL';
+
+    if (highRisk && clearance !== 'TOP_SECRET') {
+      return { ...mission, targetName: '***REDACTED***' };
+    }
+
+    return mission;
+  }
+
+  remove(id: string) {
+    const data = fs.readFileSync(this.filePath, 'utf-8');
+    const missions = JSON.parse(data) as IMission[];
+
+    const index = missions.findIndex((m) => m.id === id);
+
+    if (index === -1) {
+      throw new NotFoundException();
+    }
+
+    missions.splice(index, 1);
+    fs.writeFileSync(this.filePath, JSON.stringify(missions, null, 4));
+
+    return { message: `Mission ID ${id} has been successfully deleted.` };
+  }
 }
