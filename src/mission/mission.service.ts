@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { IMission, ICreateMission } from './mission.interface';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -62,5 +62,20 @@ export class MissionService {
     fs.writeFileSync(this.filePath, JSON.stringify(missions, null, 4));
 
     return newMission;
+  }
+  remove(id: string) {
+    const data = fs.readFileSync(this.filePath, 'utf-8');
+    const missions = JSON.parse(data) as IMission[];
+
+    const index = missions.findIndex((m) => m.id === id);
+
+    if (index === -1) {
+      throw new NotFoundException();
+    }
+
+    missions.splice(index, 1);
+    fs.writeFileSync(this.filePath, JSON.stringify(missions, null, 4));
+
+    return { message: `Mission ID ${id} has been successfully deleted.` };
   }
 }
