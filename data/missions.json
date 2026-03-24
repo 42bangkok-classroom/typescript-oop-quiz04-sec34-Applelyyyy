@@ -1,20 +1,20 @@
 [
-    {
-        "id": "1",
-        "codename": "WINTER_SUN",
-        "status": "COMPLETED",
-        "targetName": "Dr. Viktor",
-        "riskLevel": "MEDIUM",
-        "startDate": "2024-01-01",
-        "endDate": "2024-01-10"
-    },
-    {
-        "id": "2",
-        "codename": "NIGHT_SHADOW",
-        "status": "ACTIVE",
-        "targetName": "Unknown Syndicate Base",
-        "riskLevel": "HIGH",
-        "startDate": "2024-02-15",
-        "endDate": null
-    }
+  {
+    "id": "1",
+    "codename": "WINTER_SUN",
+    "status": "COMPLETED",
+    "targetName": "Dr. Viktor",
+    "riskLevel": "MEDIUM",
+    "startDate": "2024-01-01",
+    "endDate": "2024-01-10"
+  },
+  {
+    "id": "2",
+    "codename": "NIGHT_SHADOW",
+    "status": "ACTIVE",
+    "targetName": "Unknown Syndicate Base",
+    "riskLevel": "HIGH",
+    "startDate": "2024-02-15",
+    "endDate": null
+  }
 ]

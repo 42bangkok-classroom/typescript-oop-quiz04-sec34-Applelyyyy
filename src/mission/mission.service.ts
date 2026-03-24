@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { IMission, ICreateMission } from './mission.interface';
 import * as fs from 'fs';
 import * as path from 'path';
+import { IMission } from './mission.interface';
+
 @Injectable()
 export class MissionService {
-  private filePath = path.join(__dirname, '../../data/missions.json');
+  // Mock data ของภารกิจทั้งหมด
   private readonly missions = [
     { id: 1, codename: 'OPERATION_STORM', status: 'ACTIVE' },
     { id: 2, codename: 'SILENT_SNAKE', status: 'COMPLETED' },
@@ -14,88 +15,153 @@ export class MissionService {
     { id: 6, codename: 'GHOST_RIDER', status: 'COMPLETED' },
   ];
 
+  /**
+   * สรุปจำนวนภารกิจตามสถานะ
+   * @returns Object ที่มี key เป็นชื่อสถานะ และ value เป็นจำนวน
+   */
   getSummary() {
-    const summary: { [key: string]: number } = {};
-
-    for (const mission of this.missions) {
-      if (summary[mission.status] == null) {
+    // ใช้ reduce เพื่อนับจำนวนแต่ละสถานะ
+    return this.missions.reduce((summary, mission) => {
+      // ถ้ายังไม่มี key สถานะนี้ ให้ตั้งเป็น 0 ก่อน
+      if (!summary[mission.status]) {
         summary[mission.status] = 0;
       }
+      // เพิ่มจำนวนของสถานะนั้น
       summary[mission.status]++;
-    }
-
-    return summary;
+      return summary;
+    }, {});
   }
-  findAll() {
-    const data = fs.readFileSync(this.filePath, 'utf-8');
-    const missions = JSON.parse(data) as IMission[];
 
+  /**
+   * ดึงข้อมูลภารกิจทั้งหมดจากไฟล์ JSON พร้อมคำนวณระยะเวลา
+   * @returns Array ของภารกิจพร้อม field durationDays
+   */
+  findAll() {
+    // อ่านไฟล์ missions.json
+    const filePath = path.join(process.cwd(), 'data', 'missions.json');
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const missions: IMission[] = JSON.parse(fileContent);
+
+    // Map ข้อมูลเพื่อเพิ่ม durationDays
     return missions.map((mission) => {
       let durationDays = -1;
 
-      if (mission.endDate != null) {
-        const start = new Date(mission.startDate).getTime();
-        const end = new Date(mission.endDate).getTime();
-        durationDays = (end - start) / (1000 * 60 * 60 * 24);
+      // ถ้ามี endDate ให้คำนวณจำนวนวัน
+      if (mission.endDate) {
+        const start = new Date(mission.startDate);
+        const end = new Date(mission.endDate);
+        // หาจำนวนวันโดยหาผลต่างของเวลา แล้วหารด้วยจำนวน milliseconds ใน 1 วัน
+        durationDays = Math.floor(
+          (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+        );
       }
 
-      return { ...mission, durationDays };
+      return {
+        ...mission,
+        durationDays,
+      };
     });
   }
 
-  create(body: ICreateMission) {
-    const data = fs.readFileSync(this.filePath, 'utf-8');
-    const missions = JSON.parse(data) as IMission[];
+  /**
+   * ดึงข้อมูลภารกิจ 1 รายการตาม ID พร้อมเซ็นเซอร์ข้อมูลตามระดับสิทธิ์
+   * @param id รหัสภารกิจ
+   * @param clearance ระดับสิทธิ์ (STANDARD, SECRET, TOP_SECRET)
+   * @returns ข้อมูลภารกิจที่มีการเซ็นเซอร์ตามสิทธิ์
+   */
+  findOne(id: string, clearance: string = 'STANDARD') {
+    // อ่านไฟล์ missions.json
+    const filePath = path.join(process.cwd(), 'data', 'missions.json');
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const missions: IMission[] = JSON.parse(fileContent);
 
-    const lastId = Number(missions[missions.length - 1].id);
-    const newMission: IMission = {
-      id: String(lastId + 1),
-      codename: body.codename,
-      status: 'ACTIVE',
-      targetName: body.targetName,
-      riskLevel: body.riskLevel,
-      startDate: body.startDate,
-      endDate: null,
-    };
-
-    missions.push(newMission);
-    fs.writeFileSync(this.filePath, JSON.stringify(missions, null, 4));
-
-    return newMission;
-  }
-
-  findOne(id: string, clearance: string) {
-    const data = fs.readFileSync(this.filePath, 'utf-8');
-    const missions = JSON.parse(data) as IMission[];
-
+    // หาภารกิจที่ตรงกับ id
     const mission = missions.find((m) => m.id === id);
 
-    if (mission == null) {
+    // ถ้าหาไม่เจอ throw error 404
+    if (!mission) {
       throw new NotFoundException();
     }
 
-    const highRisk = mission.riskLevel === 'HIGH' || mission.riskLevel === 'CRITICAL';
+    // ตรวจสอบว่าต้องเซ็นเซอร์หรือไม่
+    // ถ้า riskLevel เป็น HIGH หรือ CRITICAL และ clearance ไม่ใช่ TOP_SECRET
+    const needRedaction =
+      (mission.riskLevel === 'HIGH' || mission.riskLevel === 'CRITICAL') &&
+      clearance !== 'TOP_SECRET';
 
-    if (highRisk && clearance !== 'TOP_SECRET') {
-      return { ...mission, targetName: '***REDACTED***' };
+    // ถ้าต้องเซ็นเซอร์ ให้เปลี่ยน targetName
+    if (needRedaction) {
+      return {
+        ...mission,
+        targetName: '***REDACTED***',
+      };
     }
 
     return mission;
   }
 
+  /**
+   * สร้างภารกิจใหม่และบันทึกลงไฟล์
+   * @param body ข้อมูลภารกิจใหม่
+   * @returns ภารกิจที่สร้างเสร็จพร้อม id
+   */
+  create(body: any) {
+    // อ่านไฟล์ missions.json
+    const filePath = path.join(process.cwd(), 'data', 'missions.json');
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const missions: IMission[] = JSON.parse(fileContent);
+
+    // หา id ใหม่โดยเพิ่มจากรายการสุดท้าย
+    const lastId = missions.length > 0 ? parseInt(missions[missions.length - 1].id) : 0;
+    const newId = (lastId + 1).toString();
+
+    // สร้างภารกิจใหม่พร้อมค่า default
+    const newMission: IMission = {
+      id: newId,
+      codename: body.codename,
+      status: 'ACTIVE', // ตั้งค่า default เป็น ACTIVE
+      targetName: body.targetName,
+      riskLevel: body.riskLevel,
+      startDate: body.startDate,
+      endDate: null, // ตั้งค่า default เป็น null
+    };
+
+    // เพิ่มภารกิจใหม่เข้า array
+    missions.push(newMission);
+
+    // เขียนกลับลงไฟล์
+    fs.writeFileSync(filePath, JSON.stringify(missions, null, 2));
+
+    return newMission;
+  }
+
+  /**
+   * ลบภารกิจตาม ID
+   * @param id รหัสภารกิจที่ต้องการลบ
+   * @returns ข้อความแจ้งผลสำเร็จ
+   */
   remove(id: string) {
-    const data = fs.readFileSync(this.filePath, 'utf-8');
-    const missions = JSON.parse(data) as IMission[];
+    // อ่านไฟล์ missions.json
+    const filePath = path.join(process.cwd(), 'data', 'missions.json');
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const missions: IMission[] = JSON.parse(fileContent);
 
-    const index = missions.findIndex((m) => m.id === id);
+    // หาภารกิจที่ตรงกับ id
+    const missionIndex = missions.findIndex((m) => m.id === id);
 
-    if (index === -1) {
+    // ถ้าหาไม่เจอ throw error 404
+    if (missionIndex === -1) {
       throw new NotFoundException();
     }
 
-    missions.splice(index, 1);
-    fs.writeFileSync(this.filePath, JSON.stringify(missions, null, 4));
+    // ลบภารกิจออกจาก array
+    missions.splice(missionIndex, 1);
 
-    return { message: `Mission ID ${id} has been successfully deleted.` };
+    // เขียนกลับลงไฟล์
+    fs.writeFileSync(filePath, JSON.stringify(missions, null, 2));
+
+    return {
+      message: `Mission ID ${id} has been successfully deleted.`,
+    };
   }
 }

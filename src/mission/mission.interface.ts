@@ -1,3 +1,6 @@
+/**
+ * Interface สำหรับข้อมูลภารกิจ
+ */
 export interface IMission {
   id: string;
   codename: string;
@@ -6,11 +9,4 @@ export interface IMission {
   riskLevel: string;
   startDate: string;
   endDate: string | null;
-}
-
-export interface ICreateMission {
-  codename: string;
-  targetName: string;
-  riskLevel: string;
-  startDate: string;
 }
